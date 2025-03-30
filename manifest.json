@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "obsidian-cannonball",
+	"name": "Cannonball",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "AI-powered productivity system for Obsidian",
+	"author": "Thomas Rueckstiess",
+	"authorUrl": "https://tomr.au",
+	"fundingUrl": "",
 	"isDesktopOnly": false
 }
