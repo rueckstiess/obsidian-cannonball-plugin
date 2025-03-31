@@ -97,7 +97,7 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
     el.setText(suggestion.label);
   }
 
-  selectSuggestion(suggestion: LLMSuggestion, evt: MouseEvent | KeyboardEvent): void {
+  selectSuggestion(suggestion: LLMSuggestion): void {
     if (!this.context) {
       return;
     }
