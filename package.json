@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-llm-helper",
+	"name": "obsidian-cannonball-plugin",
 	"version": "1.0.0",
 	"description": "Integrate LLM capabilities into Obsidian with a trigger phrase",
 	"main": "main.js",
