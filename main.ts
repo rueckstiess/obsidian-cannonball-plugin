@@ -1,155 +1,70 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { SYSTEM_PROMPT, GENERIC_NODE_PROMPT } from './prompts';
+import { Plugin } from "obsidian";
+import { LLMSuggest } from "./suggest/llm-suggest";
+import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
+import { sendToLLM } from "./llm-service";
 
+export default class LLMHelper extends Plugin {
+	public settings: LLMSettings;
 
-interface MyPluginSettings {
-	apiKey: string;
-}
-
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	apiKey: ''
-}
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
-
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+		// Register the suggestion functionality
+		this.registerEditorSuggest(new LLMSuggest(this.app, this));
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+		// Add settings tab
+		this.addSettingTab(new LLMSettingsTab(this.app, this));
 
+		// Add a command to open the LLM prompt manually
 		this.addCommand({
-			id: 'ask-openai',
-			name: 'Ask OpenAI a question',
-			hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'c' }],
-			editorCallback: (editor) => this.askLLM(editor),
+			id: "open-llm-prompt",
+			name: "Open LLM Prompt",
+			editorCallback: (editor, view) => {
+				// This will be implemented later to manually trigger the LLM prompt
+				const currentContent = editor.getValue();
+				const cursorPos = editor.getCursor();
+
+				// We'll implement this function to show a modal for the prompt
+				this.showLLMPromptModal(editor, view, currentContent, cursorPos);
+			}
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-		// 	console.log('click', evt);
-		// });
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		// this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+		console.log("LLM Helper plugin loaded");
 	}
 
-	async askLLM(editor: Editor): Promise<void> {
-		if (!this.settings.apiKey) {
-			new Notice('OpenAI API key not set!');
-			return;
-		}
-
-		const markdownContent = editor.getValue(); // Full note content
-		const cursor = editor.getCursor();
-		const line = editor.getLine(cursor.line);
-
-		// Extract node content from line
-		const match = line.match(/^- *(?:\[\w?\])? *(.*)/);
-		const nodeContent = match ? match[1].trim() : line.trim();
-
-		const nodeType = 'Task'; // hardcoded for now
-
-		const systemPrompt = SYSTEM_PROMPT(markdownContent);
-		const userPrompt = GENERIC_NODE_PROMPT(nodeType, nodeContent, markdownContent);
-
-		console.log('[Cannonball Plugin] === Prompt Debug ===');
-		console.log('System Prompt:\n', systemPrompt);
-		console.log('User Prompt:\n', userPrompt);
-
-		try {
-			const res = await fetch('https://api.openai.com/v1/chat/completions', {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${this.settings.apiKey}`,
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					model: 'gpt-4o',
-					messages: [
-						{ role: 'system', content: systemPrompt },
-						{ role: 'user', content: userPrompt }
-					]
-				}),
-			});
-
-			const data = await res.json();
-			const reply = data.choices?.[0]?.message?.content?.trim() || '[No response]';
-
-			new Notice(`LLM response:\n${reply}`);
-			console.log('[Cannonball Plugin] === LLM Response ===');
-			console.log(reply);
-		} catch (err) {
-			console.error(err);
-			new Notice('[Error calling OpenAI]');
-		}
+	onunload(): void {
+		console.log("LLM Helper plugin unloaded");
 	}
 
-	onunload() {
-
-	}
-
-	async loadSettings() {
+	async loadSettings(): Promise<void> {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
+	// This function will be implemented later to show a modal for entering an LLM prompt
+	private showLLMPromptModal(editor: any, view: any, content: string, cursorPos: any): void {
+		// We'll implement this in a separate file
 	}
 
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
-	}
+	// Function to process content with LLM and insert the result
+	async processWithLLM(prompt: string, context: string, cursorPosition: any, editor: any): Promise<void> {
+		try {
+			// Check if API key is set
+			if (!this.settings.apiKey) {
+				console.error("OpenAI API key not set. Please add it in the plugin settings.");
+				return;
+			}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
+			// Send to LLM
+			const response = await sendToLLM(prompt, context, this.settings.apiKey, this.settings.model);
 
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl } = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('OpenAI API Key')
-			.setDesc('Enter your OpenAI API key to use the plugin.')
-			.addText(text => text
-				.setPlaceholder('Enter OpenAI API Key')
-				.setValue(this.plugin.settings.apiKey)
-				.onChange(async (value) => {
-					this.plugin.settings.apiKey = value;
-					await this.plugin.saveSettings();
-				}));
+			// Insert the response at the cursor position
+			editor.replaceRange(response, cursorPosition);
+		} catch (error) {
+			console.error("Error processing with LLM:", error);
+		}
 	}
 }

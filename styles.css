@@ -1,8 +1,67 @@
-/*
+/* LLM Helper Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+/* Prompt Modal */
+.prompt-textarea {
+  font-family: var(--font-monospace);
+  border-radius: 4px;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  resize: vertical;
+}
 
-If your plugin does not need CSS, delete this file.
+.prompt-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
 
-*/
+.context-preview {
+  font-family: var(--font-monospace);
+  font-size: 0.8em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+}
+
+/* Loading spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border: 2px solid var(--background-modifier-border);
+  border-top: 2px solid var(--interactive-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error message */
+.error-message {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: rgba(var(--text-error-rgb), 0.1);
+}
+
+/* Button container in modal */
+.button-container {
+  margin-top: 16px;
+}
+
+/* Make the modal slightly wider */
+.modal {
+  width: 500px;
+  max-width: 100%;
+}
