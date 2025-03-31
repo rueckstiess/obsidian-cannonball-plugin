@@ -1,5 +1,5 @@
 import { requestUrl } from "obsidian";
-import { SYSTEM_PROMPT, GENERIC_TEXT_PROMPT, TASK_LIST_PROMPT } from "./prompts";
+import { SYSTEM_PROMPT, getPromptTemplate } from "./prompts";
 
 interface OpenAIResponse {
   id: string;
@@ -27,27 +27,74 @@ interface CursorPosition {
 }
 
 /**
+ * Node type definitions with associated markers
+ */
+interface NodeType {
+  name: string;
+  regex: RegExp;
+}
+
+/**
+ * Registry of node types to make it easy to add new ones
+ */
+const NODE_TYPES: NodeType[] = [
+  // Task nodes (including standard, completed, in-progress, and cancelled)
+  {
+    name: "TASK_LIST",
+    regex: /^\s*-\s*\[\s*(?:[ xX/-])\s*\]/
+  },
+  // Question nodes
+  {
+    name: "QUESTION",
+    regex: /^\s*-\s*\[\s*\?\s*\]/
+  },
+  // Decision nodes
+  {
+    name: "DECISION",
+    regex: /^\s*-\s*\[\s*[dD]\s*\]/
+  },
+  // Regular bullet points
+  {
+    name: "BULLET_LIST",
+    regex: /^\s*-\s+(?!\[)/
+  }
+  // Add more node types here as needed:
+  // { name: "GOAL", regex: /^\s*-\s*\[\s*[gG]\s*\]/ },
+  // { name: "ARTIFACT", regex: /^\s*-\s*\[\s*[aA]\s*\]/ },
+];
+
+/**
  * Determines which prompt type to use based on context
  * @param context The document content
  * @param cursorPos Cursor position
  * @returns The name of the prompt type to use
  */
 function determinePromptType(context: string, cursorPos: CursorPosition): string {
-  // Get the current line
+  // Get surrounding lines for context (3 lines above and below)
   const lines = context.split('\n');
-
-  // Check if we're in a task list context
-  const taskListRegex = /^(\s*)-\s*\[\s*[\]xX]\s/;
   const surroundingLines = lines.slice(
     Math.max(0, cursorPos.line - 3),
     Math.min(lines.length, cursorPos.line + 4)
   );
 
-  if (surroundingLines.some(line => taskListRegex.test(line))) {
-    return "TASK_LIST";
+  // Get the current line (where the cursor is)
+  const currentLine = lines[cursorPos.line];
+
+  // First check if the current line matches any node type
+  for (const nodeType of NODE_TYPES) {
+    if (nodeType.regex.test(currentLine)) {
+      return nodeType.name;
+    }
   }
 
-  // Default to generic text prompt
+  // Then check surrounding lines to determine context
+  for (const nodeType of NODE_TYPES) {
+    if (surroundingLines.some(line => nodeType.regex.test(line))) {
+      return nodeType.name;
+    }
+  }
+
+  // Default to generic text if no specific context is detected
   return "GENERIC_TEXT";
 }
 
@@ -80,19 +127,11 @@ export async function sendToLLM(
     // Determine which prompt type to use
     const promptType = determinePromptType(context, cursorPos);
 
-    // Generate the appropriate user prompt
-    let userPrompt = "";
+    // Get the appropriate prompt template function
+    const promptTemplate = getPromptTemplate(promptType);
 
-    switch (promptType) {
-      case "TASK_LIST":
-        // Import dynamically to avoid circular dependencies
-        userPrompt = TASK_LIST_PROMPT(context, prompt, cursorPos);
-        break;
-      case "GENERIC_TEXT":
-      default:
-        userPrompt = GENERIC_TEXT_PROMPT(context, prompt, cursorPos);
-        break;
-    }
+    // Generate the user prompt using the selected template
+    const userPrompt = promptTemplate(context, prompt, cursorPos);
 
     // Format the messages to send to OpenAI
     const messages = [
@@ -133,9 +172,9 @@ export async function sendToLLM(
     const responseData = response.json as OpenAIResponse;
 
     if (responseData.choices && responseData.choices.length > 0) {
-      const response = responseData.choices[0].message.content.trim();
+      const response = responseData.choices[0].message.content.trimEnd();
       console.log("Received response from OpenAI API:", response);
-      return response
+      return response;
     } else {
       throw new Error("Received empty response from OpenAI");
     }
