@@ -27,13 +27,17 @@ interface OpenAIResponse {
  * @param context The document content for context
  * @param apiKey OpenAI API key
  * @param model The OpenAI model to use
+ * @param maxTokens Maximum number of tokens in the response
+ * @param temperature Controls randomness from 0 (deterministic) to 2 (very random)
  * @returns The LLM's response text
  */
 export async function sendToLLM(
   prompt: string,
   context: string,
   apiKey: string,
-  model: string
+  model: string,
+  maxTokens = 1000,
+  temperature = 0.7
 ): Promise<string> {
   if (!apiKey) {
     throw new Error("API key not provided. Please add it in the plugin settings.");
@@ -71,7 +75,8 @@ export async function sendToLLM(
       body: JSON.stringify({
         model: model,
         messages: messages,
-        temperature: 0.7,
+        max_tokens: maxTokens,
+        temperature: temperature,
       }),
     });
 

@@ -2,6 +2,7 @@ import { Plugin } from "obsidian";
 import { LLMSuggest } from "./suggest/llm-suggest";
 import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
 import { sendToLLM } from "./llm-service";
+import { LLMPromptModal } from "./modals/llm-prompt-modal";
 
 export default class LLMHelper extends Plugin {
 	public settings: LLMSettings;
@@ -44,27 +45,53 @@ export default class LLMHelper extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	// This function will be implemented later to show a modal for entering an LLM prompt
+	// Shows a modal for entering an LLM prompt
 	private showLLMPromptModal(editor: any, view: any, content: string, cursorPos: any): void {
-		// We'll implement this in a separate file
+		new LLMPromptModal(
+			this.app,
+			this,
+			content,
+			cursorPos,
+			editor
+		).open();
 	}
 
 	// Function to process content with LLM and insert the result
-	async processWithLLM(prompt: string, context: string, cursorPosition: any, editor: any): Promise<void> {
+	async processWithLLM(
+		prompt: string,
+		context: string,
+		cursorPosition: any,
+		editor: any,
+		loadingIndicatorPos?: { from: any, to: any }
+	): Promise<void> {
 		try {
 			// Check if API key is set
 			if (!this.settings.apiKey) {
-				console.error("OpenAI API key not set. Please add it in the plugin settings.");
-				return;
+				throw new Error("OpenAI API key not set. Please add it in the plugin settings.");
 			}
 
 			// Send to LLM
-			const response = await sendToLLM(prompt, context, this.settings.apiKey, this.settings.model);
+			const response = await sendToLLM(
+				prompt,
+				context,
+				this.settings.apiKey,
+				this.settings.model,
+				this.settings.maxTokens,
+				this.settings.temperature
+			);
+
+			// If we have a loading indicator, remove it before inserting the response
+			if (loadingIndicatorPos) {
+				editor.replaceRange("", loadingIndicatorPos.from, loadingIndicatorPos.to);
+			}
 
 			// Insert the response at the cursor position
 			editor.replaceRange(response, cursorPosition);
+
+			return Promise.resolve();
 		} catch (error) {
 			console.error("Error processing with LLM:", error);
+			return Promise.reject(error);
 		}
 	}
 }

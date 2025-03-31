@@ -7,19 +7,23 @@ export class LLMPromptModal extends Modal {
   private cursorPosition: any;
   private editor: any;
   private promptValue = "";
+  private initialPrompt = "";
 
   constructor(
     app: App,
     plugin: LLMHelper,
     documentContent: string,
     cursorPosition: any,
-    editor: any
+    editor: any,
+    initialPrompt = ""
   ) {
     super(app);
     this.plugin = plugin;
     this.documentContent = documentContent;
     this.cursorPosition = cursorPosition;
     this.editor = editor;
+    this.initialPrompt = initialPrompt;
+    this.promptValue = initialPrompt; // Set initial value
   }
 
   onOpen() {
@@ -42,6 +46,12 @@ export class LLMPromptModal extends Modal {
       cls: "prompt-textarea"
     });
 
+    // Set initial value if provided
+    if (this.initialPrompt) {
+      promptTextarea.value = this.initialPrompt;
+      this.promptValue = this.initialPrompt;
+    }
+
     // Add a style to make the textarea width 100%
     promptTextarea.style.width = "100%";
     promptTextarea.style.marginBottom = "1em";
@@ -51,8 +61,14 @@ export class LLMPromptModal extends Modal {
       this.promptValue = (e.target as HTMLTextAreaElement).value;
     });
 
-    // Focus the textarea when the modal opens
-    setTimeout(() => promptTextarea.focus(), 10);
+    // Focus the textarea when the modal opens and place cursor at the end
+    setTimeout(() => {
+      promptTextarea.focus();
+      promptTextarea.setSelectionRange(
+        this.initialPrompt.length,
+        this.initialPrompt.length
+      );
+    }, 10);
 
     // Add a setting for showing a preview of the context (togglable)
     let showContext = false;
