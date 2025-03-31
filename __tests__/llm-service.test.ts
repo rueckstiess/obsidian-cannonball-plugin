@@ -7,7 +7,7 @@ jest.mock('../prompts', () => ({
   SYSTEM_PROMPT: jest.fn().mockReturnValue('Mock system prompt'),
   getPromptTemplate: jest.fn().mockImplementation((promptType) => {
     // Return a function that includes the prompt type in its output for testing
-    return (content: string, prompt: string, cursorPos: any) => `MOCK_TEMPLATE:${promptType}`;
+    return (content: string, prompt: string, cursorPos: { line: number, ch: number }) => `MOCK_TEMPLATE:${promptType}`;
   }),
   insertCursorMarker: jest.fn().mockImplementation((text, pos) => {
     return `${text} with cursor at line ${pos.line}, ch ${pos.ch}`;

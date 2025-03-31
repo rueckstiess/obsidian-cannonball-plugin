@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { Plugin, Editor } from "obsidian";
 import { LLMSuggest } from "./suggest/llm-suggest";
 import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
 import { sendToLLM } from "./llm-service";
@@ -46,7 +46,7 @@ export default class LLMHelper extends Plugin {
 	}
 
 	// Shows a modal for entering an LLM prompt
-	private showLLMPromptModal(editor: any, view: any, content: string, cursorPos: any): void {
+	private showLLMPromptModal(editor: Editor, view: unknown, content: string, cursorPos: { line: number, ch: number }): void {
 		new LLMPromptModal(
 			this.app,
 			this,
@@ -60,8 +60,8 @@ export default class LLMHelper extends Plugin {
 	async processWithLLM(
 		prompt: string,
 		context: string,
-		cursorPosition: any,
-		editor: any
+		cursorPosition: { line: number, ch: number },
+		editor: Editor
 	): Promise<void> {
 		try {
 			// Check if API key is set

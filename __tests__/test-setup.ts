@@ -1,5 +1,6 @@
 // This file is used to set up the test environment
 // It silences console output and restores it after tests
+export {};
 
 // Store original console methods
 const originalConsole = {
