@@ -57,6 +57,7 @@ export default class LLMHelper extends Plugin {
 	}
 
 	// Function to process content with LLM and insert the result
+	// Function to process content with LLM and insert the result
 	async processWithLLM(
 		prompt: string,
 		context: string,
@@ -70,10 +71,11 @@ export default class LLMHelper extends Plugin {
 				throw new Error("OpenAI API key not set. Please add it in the plugin settings.");
 			}
 
-			// Send to LLM
+			// Send to LLM with cursor position
 			const response = await sendToLLM(
 				prompt,
 				context,
+				cursorPosition, // Pass the cursor position
 				this.settings.apiKey,
 				this.settings.model,
 				this.settings.maxTokens,

@@ -1,5 +1,6 @@
 import { requestUrl } from "obsidian";
-import { SYSTEM_PROMPT } from "prompts";
+import { SYSTEM_PROMPT, GENERIC_TEXT_PROMPT, TASK_LIST_PROMPT } from "./prompts";
+
 interface OpenAIResponse {
   id: string;
   object: string;
@@ -20,11 +21,42 @@ interface OpenAIResponse {
   };
 }
 
+interface CursorPosition {
+  line: number;
+  ch: number;
+}
+
+/**
+ * Determines which prompt type to use based on context
+ * @param context The document content
+ * @param cursorPos Cursor position
+ * @returns The name of the prompt type to use
+ */
+function determinePromptType(context: string, cursorPos: CursorPosition): string {
+  // Get the current line
+  const lines = context.split('\n');
+
+  // Check if we're in a task list context
+  const taskListRegex = /^(\s*)-\s*\[\s*[\]xX]\s/;
+  const surroundingLines = lines.slice(
+    Math.max(0, cursorPos.line - 3),
+    Math.min(lines.length, cursorPos.line + 4)
+  );
+
+  if (surroundingLines.some(line => taskListRegex.test(line))) {
+    return "TASK_LIST";
+  }
+
+  // Default to generic text prompt
+  return "GENERIC_TEXT";
+}
+
 /**
  * Sends the prompt and context to OpenAI's API
  * 
  * @param prompt The user's prompt for the LLM
  * @param context The document content for context
+ * @param cursorPos The cursor position
  * @param apiKey OpenAI API key
  * @param model The OpenAI model to use
  * @param maxTokens Maximum number of tokens in the response
@@ -34,6 +66,7 @@ interface OpenAIResponse {
 export async function sendToLLM(
   prompt: string,
   context: string,
+  cursorPos: CursorPosition,
   apiKey: string,
   model: string,
   maxTokens = 1000,
@@ -44,23 +77,44 @@ export async function sendToLLM(
   }
 
   try {
+    // Determine which prompt type to use
+    const promptType = determinePromptType(context, cursorPos);
+
+    // Generate the appropriate user prompt
+    let userPrompt = "";
+
+    switch (promptType) {
+      case "TASK_LIST":
+        // Import dynamically to avoid circular dependencies
+        userPrompt = TASK_LIST_PROMPT(context, prompt, cursorPos);
+        break;
+      case "GENERIC_TEXT":
+      default:
+        userPrompt = GENERIC_TEXT_PROMPT(context, prompt, cursorPos);
+        break;
+    }
+
     // Format the messages to send to OpenAI
     const messages = [
       {
         role: "system",
         content: SYSTEM_PROMPT(),
       },
-      // TODO: Extract this into prompts.ts
       {
         role: "user",
-        content: `Document Content:
-        \`\`\`
-        ${context}
-        \`\`\`
-        
-        Prompt: ${prompt}`,
+        content: userPrompt,
       },
     ];
+
+    // create body
+    const body = {
+      model: model,
+      messages: messages,
+      max_tokens: maxTokens,
+      temperature: temperature,
+    };
+
+    console.log("Sending request to OpenAI API with body:", body);
 
     // Make the API request
     const response = await requestUrl({
@@ -70,19 +124,16 @@ export async function sendToLLM(
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: model,
-        messages: messages,
-        max_tokens: maxTokens,
-        temperature: temperature,
-      }),
+      body: JSON.stringify(body),
     });
 
     // Parse the response
     const responseData = response.json as OpenAIResponse;
 
     if (responseData.choices && responseData.choices.length > 0) {
-      return responseData.choices[0].message.content.trim();
+      const response = responseData.choices[0].message.content.trim();
+      console.log("Received response from OpenAI API:", response);
+      return response
     } else {
       throw new Error("Received empty response from OpenAI");
     }

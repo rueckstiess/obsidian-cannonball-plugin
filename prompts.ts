@@ -1,3 +1,13 @@
+// Define interfaces for different prompt types
+interface CursorPosition {
+  line: number;
+  ch: number;
+}
+
+/**
+ * System prompt that defines the assistant's role and behavior
+ * This is sent with every request to establish context
+ */
 export const SYSTEM_PROMPT = (): string => `
 You are a helpful AI assistant embedded in an Obsidian note-taking application.
 The user will provide a document with the current cursor position, indicated with "<CURSOR>", 
@@ -8,58 +18,84 @@ code fence. Do not repeat the entire document, just provide the relevant informa
 cursor position.
 
 Your response will be inserted in the document verbatim at the cursor position. For example, if you are invoked in a 
-bullet point context, return additional bullet points (optionally with preceeding newline if required).
-`
+bullet point context, return additional bullet points (optionally with preceding newline if required).
+`;
 
+/**
+ * Inserts a cursor marker at the specified position in the text
+ * @param text The document content
+ * @param position The cursor position
+ * @returns The text with cursor marker inserted
+ */
+export function insertCursorMarker(text: string, position: CursorPosition): string {
+  const lines = text.split('\n');
 
-export const GENERIC_TEXT_PROMPT = (markdownContent: string, prompt: string, cursorPos: any): string => `
+  // Ensure the position is within bounds
+  const line = Math.min(position.line, lines.length - 1);
+  const ch = Math.min(position.ch, lines[line].length);
+
+  // Insert the cursor marker
+  const before = lines[line].substring(0, ch);
+  const after = lines[line].substring(ch);
+  lines[line] = before + "<CURSOR>" + after;
+
+  return lines.join('\n');
+}
+
+/**
+ * Generic text prompt for general text editing and completion
+ * @param markdownContent The document content
+ * @param prompt The user's prompt
+ * @param cursorPos The cursor position
+ * @returns Formatted prompt with cursor marker
+ */
+export const GENERIC_TEXT_PROMPT = (
+  markdownContent: string,
+  prompt: string,
+  cursorPos: CursorPosition
+): string => {
+  // Insert the cursor marker at the current position
+  const contentWithCursor = insertCursorMarker(markdownContent, cursorPos);
+
+  return `
 The current document content is:
 \`\`\`markdown
-${markdownContent}
+${contentWithCursor}
 \`\`\`
+
 The user prompt is: ${prompt}
-`
 
-// === OLD PROMPTS ===
-// export const SYSTEM_PROMPT = (markdownContent: string): string => `
-// You are interacting with the user through a productivity system called "Cannonball". 
+Remember that your response will be inserted at the <CURSOR> position. Format your response appropriately for the context.
+`;
+}
 
-// Cannonball is based on hierarchical node trees expressed as extended Markdown syntax. Your responses will be converted into nodes in this system and replaces the AI Node that invoked this request.
+/**
+ * Specialized prompt for task list management
+ * @param markdownContent The document content
+ * @param prompt The user's prompt
+ * @param cursorPos The cursor position
+ * @returns Formatted prompt with cursor marker for task-related operations
+ */
+export const TASK_LIST_PROMPT = (
+  markdownContent: string,
+  prompt: string,
+  cursorPos: CursorPosition
+): string => {
+  // Insert the cursor marker at the current position
+  const contentWithCursor = insertCursorMarker(markdownContent, cursorPos);
 
-// NODE TYPES:
-// - Bullet (-): Regular grouping nodes or comments without semantic meaning
-// - Task (- [ ]): Work items that can be completed
-// - Question (- [q]): Uncertainties requiring additional information
-// - Decision (- [d]): Choices between multiple options (options provided as child nodes)
-// - Artefact (- [a]): Tangible outputs produced (e.g. code, Markdown notes, files, assets, ...)
-// - Problem (- [P]): Issues requiring resolution
-// - Goal (- [g]): Desired outcomes
-// - Experiment (- [e]): Structured investigations and ML experiments
-// - Meta-comments (- [m]): Comments and observations related to the Cannonball system or its usage
+  return `
+The current document contains a task list:
+\`\`\`markdown
+${contentWithCursor}
+\`\`\`
 
-// RULES:
-// 1. Always respond with a properly formatted markdown bullet list wrapped in a code fence block.
-// 2. Do not include any additional text or explanations outside the code block.
-// 3. You can leave comments related to the topic as regular Bullet nodes. 
-// 4. You can leave meta-comments related to the Cannonball system as Meta-comment nodes. Use these sparingly.
-// 5. Use the appropriate node markers based on node type
-// 6. You may use nesting but never exceed 2 levels of depth (e.g. tasks and sub-tasks, but no sub-sub-tasks).
-// 6. Do not repeat the parent node, only provide the children nodes.
+The user prompt is: ${prompt}
 
-// CURRENT CONTEXT:
-// This is the current markdown file:
-// \`\`\`markdown
-// ${markdownContent}
-// \`\`\`
-// `;
+Focus on task management operations like creating new tasks, breaking down tasks, prioritizing, or marking tasks complete.
+Format tasks using standard Markdown task syntax: "- [ ] Task description"
+Your response will be inserted at the <CURSOR> position.
+`;
+}
 
-// export const GENERIC_NODE_PROMPT = (
-//   nodeType: string,
-//   nodeContent: string,
-//   request: string
-// ): string => `
-// The current node you are operating on is a "${nodeType}" node with content: "${nodeContent}"
-// The instruction from the user on this request is: "${request}"
-
-// Respond only with a list of nodes in a code block using appropriate node types.
-// `;
+// You can add more specialized prompts here as needed
