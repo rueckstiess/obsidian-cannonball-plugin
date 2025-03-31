@@ -5,6 +5,7 @@ import {
   EditorSuggest,
   EditorSuggestContext,
   EditorSuggestTriggerInfo,
+  MarkdownView,
   TFile,
 } from "obsidian";
 import LLMHelper from "../main";
@@ -39,7 +40,7 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
     this.close();
 
     // Get the current editor and document content
-    const activeView = this.app.workspace.getActiveViewOfType("markdown");
+    const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!activeView) return;
 
     const editor = activeView.editor;
