@@ -31,7 +31,7 @@ export class LLMSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "LLM Helper Settings" });
+    containerEl.createEl("h2", { text: "Cannonball LLM Settings" });
 
     // API Key Setting
     new Setting(containerEl)
