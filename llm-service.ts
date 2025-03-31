@@ -1,5 +1,5 @@
 import { requestUrl } from "obsidian";
-
+import { SYSTEM_PROMPT } from "prompts";
 interface OpenAIResponse {
   id: string;
   object: string;
@@ -48,11 +48,9 @@ export async function sendToLLM(
     const messages = [
       {
         role: "system",
-        content: `You are a helpful AI assistant embedded in an Obsidian note-taking application. 
-        The user will provide a document and a prompt.
-        Respond to the prompt while considering the document content as context.
-        Be concise and helpful.`,
+        content: SYSTEM_PROMPT(),
       },
+      // TODO: Extract this into prompts.ts
       {
         role: "user",
         content: `Document Content:
