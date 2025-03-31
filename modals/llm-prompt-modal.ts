@@ -1,11 +1,11 @@
-import { App, Modal, Setting } from "obsidian";
+import { App, Modal, Setting, Editor } from "obsidian";
 import LLMHelper from "../main";
 
 export class LLMPromptModal extends Modal {
   private plugin: LLMHelper;
   private documentContent: string;
-  private cursorPosition: any;
-  private editor: any;
+  private cursorPosition: { line: number, ch: number };
+  private editor: Editor;
   private promptValue = "";
   private initialPrompt = "";
 
@@ -13,8 +13,8 @@ export class LLMPromptModal extends Modal {
     app: App,
     plugin: LLMHelper,
     documentContent: string,
-    cursorPosition: any,
-    editor: any,
+    cursorPosition: { line: number, ch: number },
+    editor: Editor,
     initialPrompt = ""
   ) {
     super(app);

@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { Plugin, Editor } from "obsidian";
 import { LLMSuggest } from "./suggest/llm-suggest";
 import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
 import { sendToLLM } from "./llm-service";
@@ -46,7 +46,7 @@ export default class LLMHelper extends Plugin {
 	}
 
 	// Shows a modal for entering an LLM prompt
-	private showLLMPromptModal(editor: any, view: any, content: string, cursorPos: any): void {
+	private showLLMPromptModal(editor: Editor, view: unknown, content: string, cursorPos: { line: number, ch: number }): void {
 		new LLMPromptModal(
 			this.app,
 			this,
@@ -60,9 +60,8 @@ export default class LLMHelper extends Plugin {
 	async processWithLLM(
 		prompt: string,
 		context: string,
-		cursorPosition: any,
-		editor: any,
-		loadingIndicatorPos?: { from: any, to: any }
+		cursorPosition: { line: number, ch: number },
+		editor: Editor
 	): Promise<void> {
 		try {
 			// Check if API key is set
@@ -70,20 +69,16 @@ export default class LLMHelper extends Plugin {
 				throw new Error("OpenAI API key not set. Please add it in the plugin settings.");
 			}
 
-			// Send to LLM
+			// Send to LLM with cursor position
 			const response = await sendToLLM(
 				prompt,
 				context,
+				cursorPosition, // Pass the cursor position
 				this.settings.apiKey,
 				this.settings.model,
 				this.settings.maxTokens,
 				this.settings.temperature
 			);
-
-			// If we have a loading indicator, remove it before inserting the response
-			if (loadingIndicatorPos) {
-				editor.replaceRange("", loadingIndicatorPos.from, loadingIndicatorPos.to);
-			}
 
 			// Insert the response at the cursor position
 			editor.replaceRange(response, cursorPosition);
