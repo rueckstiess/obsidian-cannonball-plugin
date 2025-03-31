@@ -109,7 +109,6 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
     }
 
     const editor = activeView.editor;
-    const content = editor.getValue();
 
     // Get the user's input (the text after the trigger phrase)
     const userInput = this.context.query || "";
@@ -119,42 +118,27 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
       editor.replaceRange("", this.context.start, this.context.end);
     }
 
+    // Get the updated content after removing the trigger phrase
+    const updatedContent = editor.getValue();
+
     // Close the suggestion UI
     this.close();
 
     if (suggestion.action === "direct") {
-      // Use the typed text directly as the prompt
-      // Show a loading indicator where the cursor is
-      const loadingPlaceholder = "⌛ Processing...";
+      // Get the current cursor position
       const cursorPos = editor.getCursor();
 
-      // Insert loading placeholder at cursor position
-      editor.replaceRange(loadingPlaceholder, cursorPos);
-
-      // Calculate the position range of the placeholder for later removal
-      const loadingPos = {
-        from: cursorPos,
-        to: {
-          line: cursorPos.line,
-          ch: cursorPos.ch + loadingPlaceholder.length
-        }
-      };
-
-      // Process with LLM
+      // Process with LLM using the updated content (without trigger phrase)
       this.plugin.processWithLLM(
         userInput,
-        content,
-        cursorPos, // Use the original cursor position for insertion
-        editor,
-        loadingPos // Pass the loading indicator position for removal
-      ).then(() => {
-        // The loading placeholder is removed in the processWithLLM method
-      }).catch(error => {
-        // Handle error - replace loading indicator with error message
+        updatedContent,
+        cursorPos,
+        editor
+      ).catch(error => {
+        // Handle error by showing error message at cursor
         editor.replaceRange(
           `⚠️ Error: ${error.message || "Failed to process with LLM"}`,
-          loadingPos.from,
-          loadingPos.to
+          cursorPos
         );
       });
     } else {
@@ -162,7 +146,7 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
       const modal = new LLMPromptModal(
         this.app,
         this.plugin,
-        content,
+        updatedContent, // Use updated content without trigger phrase
         editor.getCursor(),
         editor,
         userInput // Pass the user's input to pre-fill the modal

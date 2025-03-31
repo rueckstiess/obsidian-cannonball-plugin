@@ -114,7 +114,9 @@ export async function sendToLLM(
       temperature: temperature,
     };
 
-    console.log("Sending request to OpenAI API with body:", body);
+    console.log("Sending request to OpenAI API:");
+    console.log("System prompt:\n", body.messages[0].content);
+    console.log("User prompt:\n", body.messages[1].content);
 
     // Make the API request
     const response = await requestUrl({

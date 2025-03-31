@@ -65,7 +65,39 @@ ${contentWithCursor}
 
 The user prompt is: ${prompt}
 
-Remember that your response will be inserted at the <CURSOR> position. Format your response appropriately for the context.
+Remember that your response will be inserted exactly at the <CURSOR> position. Format your response appropriately for the context.
+`;
+}
+
+/**
+ * Specialized prompt for task list management
+ * @param markdownContent The document content
+ * @param prompt The user's prompt
+ * @param cursorPos The cursor position
+ * @returns Formatted prompt with cursor marker for task-related operations
+ */
+export const BULLET_LIST_PROMPT = (
+  markdownContent: string,
+  prompt: string,
+  cursorPos: CursorPosition
+): string => {
+  // Insert the cursor marker at the current position
+  const contentWithCursor = insertCursorMarker(markdownContent, cursorPos);
+
+  return `
+The current document contains a bullet list:
+\`\`\`markdown
+${contentWithCursor}
+\`\`\`
+
+The user prompt is: ${prompt}
+
+RULES:
+1. Structure your output as a bullet list.
+2. Format bullets using standard Markdown task syntax: "- Another bullet"
+3. Remember, your response will be inserted at the <CURSOR> position. If the user already started the current line with the bullet marker, 
+e.g. "- ", do not repeat it but finish this particular line with just the bullet point text. 
+4. Maintain the correct nesting level for additional bullet points.
 `;
 }
 
@@ -92,10 +124,11 @@ ${contentWithCursor}
 
 The user prompt is: ${prompt}
 
-Focus on task management operations like creating new tasks, breaking down tasks, prioritizing, or marking tasks complete.
-Format tasks using standard Markdown task syntax: "- [ ] Task description"
-Your response will be inserted at the <CURSOR> position.
+RULES:
+1. Focus on task management operations like creating new tasks, breaking down tasks, etc.
+2. Format tasks using standard Markdown task syntax: "- [ ] Task description"
+3. Remember, your response will be inserted at the <CURSOR> position. If the user already started the current line with the task marker, 
+e.g. "- [ ] ", do not repeat it but finish this particular line with just the task text. 
+4. Maintain the correct nesting level for additional tasks.
 `;
 }
-
-// You can add more specialized prompts here as needed

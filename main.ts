@@ -57,13 +57,11 @@ export default class LLMHelper extends Plugin {
 	}
 
 	// Function to process content with LLM and insert the result
-	// Function to process content with LLM and insert the result
 	async processWithLLM(
 		prompt: string,
 		context: string,
 		cursorPosition: any,
-		editor: any,
-		loadingIndicatorPos?: { from: any, to: any }
+		editor: any
 	): Promise<void> {
 		try {
 			// Check if API key is set
@@ -81,11 +79,6 @@ export default class LLMHelper extends Plugin {
 				this.settings.maxTokens,
 				this.settings.temperature
 			);
-
-			// If we have a loading indicator, remove it before inserting the response
-			if (loadingIndicatorPos) {
-				editor.replaceRange("", loadingIndicatorPos.from, loadingIndicatorPos.to);
-			}
 
 			// Insert the response at the cursor position
 			editor.replaceRange(response, cursorPosition);
