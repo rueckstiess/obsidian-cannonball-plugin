@@ -23,18 +23,53 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
     super(app);
     this.plugin = plugin;
 
-    // Register Shift+Enter to keep the text as is (similar to NL Dates)
+    // Register Ctrl+Enter to open the modal
     // @ts-ignore - The type definitions don't include this but it works
-    this.scope.register(["Shift"], "Enter", (evt: KeyboardEvent) => {
-      // @ts-ignore
-      this.suggestions.useSelectedItem(evt);
-      return false;
+    this.scope.register(["Ctrl"], "Enter", (evt: KeyboardEvent) => {
+      // Get the current context
+      if (!this.context) {
+        return false;
+      }
+
+      // Get the current editor and document content
+      const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (!activeView) {
+        return false;
+      }
+
+      const editor = activeView.editor;
+      const content = editor.getValue();
+
+      // Get the user's input (the text after the trigger phrase)
+      const userInput = this.context.query || "";
+
+      // Remove the trigger phrase and query from the document
+      if (this.context.start && this.context.end) {
+        editor.replaceRange("", this.context.start, this.context.end);
+      }
+
+      // Close the suggestion UI
+      this.close();
+
+      // Open the modal with the text pre-filled
+      const modal = new LLMPromptModal(
+        this.app,
+        this.plugin,
+        content,
+        editor.getCursor(),
+        editor,
+        userInput
+      );
+
+      modal.open();
+
+      return false; // Prevent default behavior
     });
 
     // Add instruction text at the bottom of suggestions
     this.setInstructions([
       { command: "↵", purpose: "to use prompt directly" },
-      { command: "→", purpose: "to open prompt modal" }
+      { command: "Ctrl+↵", purpose: "to open prompt modal" }
     ]);
   }
 
