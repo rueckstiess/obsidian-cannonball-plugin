@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import LLMHelper from "./main";
+import CannonballPlugin from "./main";
 
 export interface LLMSettings {
   apiKey: string;
@@ -20,9 +20,9 @@ export const DEFAULT_SETTINGS: LLMSettings = {
 };
 
 export class LLMSettingsTab extends PluginSettingTab {
-  plugin: LLMHelper;
+  plugin: CannonballPlugin;
 
-  constructor(app: App, plugin: LLMHelper) {
+  constructor(app: App, plugin: CannonballPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }

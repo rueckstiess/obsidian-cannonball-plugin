@@ -8,7 +8,7 @@ import {
   TFile,
   MarkdownView
 } from "obsidian";
-import LLMHelper from "../main";
+import CannonballPlugin from "../main";
 import { LLMPromptModal } from "../modals/llm-prompt-modal";
 
 interface LLMSuggestion {
@@ -17,9 +17,9 @@ interface LLMSuggestion {
 }
 
 export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
-  private plugin: LLMHelper;
+  private plugin: CannonballPlugin;
 
-  constructor(app: App, plugin: LLMHelper) {
+  constructor(app: App, plugin: CannonballPlugin) {
     super(app);
     this.plugin = plugin;
 
@@ -84,9 +84,9 @@ export class LLMSuggest extends EditorSuggest<LLMSuggestion> {
       });
     }
 
-    // Always add "Open LLM Prompt" as an option
+    // Always add "Open Prompt Modal" as an option
     suggestions.push({
-      label: "Open LLM Prompt",
+      label: "Open Prompt Modal",
       action: "modal"
     });
 

@@ -8,7 +8,7 @@ import { CustomTask } from "remark-custom-tasks";
 import { inspect } from "unist-util-inspect";
 import { visit } from 'unist-util-visit'
 
-export default class LLMHelper extends Plugin {
+export default class CannonballPlugin extends Plugin {
 	public settings: LLMSettings;
 
 	async onload(): Promise<void> {
@@ -25,7 +25,6 @@ export default class LLMHelper extends Plugin {
 			id: "open-llm-prompt",
 			name: "Open LLM Prompt",
 			editorCallback: (editor, view) => {
-				// This will be implemented later to manually trigger the LLM prompt
 				const currentContent = editor.getValue();
 				const cursorPos = editor.getCursor();
 
@@ -33,6 +32,9 @@ export default class LLMHelper extends Plugin {
 				this.showLLMPromptModal(editor, view, currentContent, cursorPos);
 			}
 		});
+
+		// create an LLMModal
+		// this.
 
 		// Add a command to parse the current document to AST
 		this.addCommand({

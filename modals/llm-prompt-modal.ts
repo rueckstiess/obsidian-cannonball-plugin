@@ -1,8 +1,8 @@
 import { App, Modal, Setting, Editor } from "obsidian";
-import LLMHelper from "../main";
+import CannonballPlugin from "../main";
 
 export class LLMPromptModal extends Modal {
-  private plugin: LLMHelper;
+  private plugin: CannonballPlugin;
   private documentContent: string;
   private cursorPosition: { line: number, ch: number };
   private editor: Editor;
@@ -11,7 +11,7 @@ export class LLMPromptModal extends Modal {
 
   constructor(
     app: App,
-    plugin: LLMHelper,
+    plugin: CannonballPlugin,
     documentContent: string,
     cursorPosition: { line: number, ch: number },
     editor: Editor,
