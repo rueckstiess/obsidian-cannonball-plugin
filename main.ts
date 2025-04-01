@@ -3,8 +3,12 @@ import { LLMSuggest } from "./suggest/llm-suggest";
 import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
 import { sendToLLM } from "./llm-service";
 import { LLMPromptModal } from "./modals/llm-prompt-modal";
+import { parseMarkdownToAST, astToMarkdown, findNodeAtCursor, buildContextFromNode } from "./markdown";
+import { CustomTask } from "remark-custom-tasks";
+import { inspect } from "unist-util-inspect";
+import { visit } from 'unist-util-visit'
 
-export default class LLMHelper extends Plugin {
+export default class CannonballPlugin extends Plugin {
 	public settings: LLMSettings;
 
 	async onload(): Promise<void> {
@@ -21,7 +25,6 @@ export default class LLMHelper extends Plugin {
 			id: "open-llm-prompt",
 			name: "Open LLM Prompt",
 			editorCallback: (editor, view) => {
-				// This will be implemented later to manually trigger the LLM prompt
 				const currentContent = editor.getValue();
 				const cursorPos = editor.getCursor();
 
@@ -30,6 +33,47 @@ export default class LLMHelper extends Plugin {
 			}
 		});
 
+		// create an LLMModal
+		// this.
+
+		// Add a command to parse the current document to AST
+		this.addCommand({
+			id: "parse-markdown-ast",
+			name: "Parse current document to AST",
+			editorCallback: async (editor) => {
+				try {
+					// Get current editor content
+					const content = editor.getValue();
+					const cursorPosition = editor.getCursor();
+
+					// Parse to AST
+					const ast = await parseMarkdownToAST(content);
+
+					visit(ast, 'customTask', (node: CustomTask) => {
+						console.log('custom task node', node.marker)
+					});
+
+					// Log the AST to console
+					console.log('Markdown AST:');
+					console.log(inspect(ast));
+
+					const nodeAtCursor = findNodeAtCursor(ast, cursorPosition);
+					console.log("Node at cursor:", nodeAtCursor);
+
+					const context = buildContextFromNode(ast, nodeAtCursor, content)
+					console.log("Context:\n", context);
+
+					// Stringify the AST back to markdown
+					const newContent = await astToMarkdown(ast);
+
+					// Update the editor with the stringified content
+					editor.setValue(newContent);
+					editor.setCursor(cursorPosition);
+				} catch (error) {
+					console.error("Error processing markdown:", error);
+				}
+			}
+		});
 		console.log("LLM Helper plugin loaded");
 	}
 

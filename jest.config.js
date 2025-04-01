@@ -16,6 +16,7 @@ module.exports = {
     'prompts.ts',
     'llm-service.ts',
     'main.ts',
+    'markdown.ts',
     'suggest/llm-suggest.ts',
     'modals/llm-prompt-modal.ts',
     '!**/node_modules/**',
