@@ -5,11 +5,9 @@ import { inspect } from 'unist-util-inspect';
 import { Root } from 'remark-parse/lib';
 import remarkCustomTasks from 'remark-custom-tasks'
 import { Node } from 'mdast';
-/**
- * Parse markdown content into an AST using remark
- * @param markdownContent The markdown content to parse
- * @returns The parsed AST as a Root node
- */
+import { visitParents, EXIT } from 'unist-util-visit-parents';
+
+
 export async function parseMarkdownToAST(markdownContent: string): Promise<Root> {
   const processor = remark()
     .use(remarkCustomTasks)
@@ -20,6 +18,23 @@ export async function parseMarkdownToAST(markdownContent: string): Promise<Root>
 
   return ast;
 }
+
+
+// /**
+//  * Parse markdown content into an AST using remark
+//  * @param markdownContent The markdown content to parse
+//  * @returns The parsed AST as a Root node
+//  */
+// export async function parseMarkdownToAST(markdownContent: string): Promise<Root> {
+//   const processor = remark()
+//     .use(remarkCustomTasks)
+//     .use(remarkFrontmatter);
+
+//   const ast = processor.parse(markdownContent);
+//   await processor.run(ast);
+
+//   return ast;
+// }
 
 /**
  * Simple utility to log the AST to the console for debugging
@@ -155,3 +170,88 @@ function calculateNodeArea(node: Node): number {
   return end.column - start.column;
 }
 
+// Function to return the lines from the markdownContent covering this node
+function contentFromNode(node: Node, markdownContent: string): string {
+  if (!node.position) {
+    return '';
+  }
+  const start = node.position.start;
+  const end = node.position.end;
+
+  // get all lines from start to end
+  let lines = markdownContent.split('\n');
+  lines = lines.slice(start.line - 1, end.line);
+
+  return lines.join('\n');
+}
+
+export function removeCursorMarker(markdownContent: string): string {
+  return markdownContent.replace(/<CURSOR>/g, '');
+}
+
+
+export function addCursorMarker(cursorPosition: { line: number, ch: number }, markdownContent: string): string {
+  const lines = markdownContent.split('\n');
+  const line = Math.min(cursorPosition.line, lines.length - 1);
+  const ch = Math.min(cursorPosition.ch, lines[line].length);
+
+  const before = lines[line].substring(0, ch);
+  const after = lines[line].substring(ch);
+  lines[line] = before + "<CURSOR>" + after;
+
+  return lines.join('\n');
+}
+
+// Function to build the context from the current node
+export function buildContextFromNode(tree: Root, nodeAtCursor: Node | undefined, markdownContent: string): string {
+  if (!nodeAtCursor || !nodeAtCursor.position) {
+    return '';
+  }
+
+  // only visit the target node
+  const test = (node: Node) => node === nodeAtCursor;
+
+  // get ancestors of node
+  let cursorAncestors: Node[] = [];
+  visitParents(tree, test, (node, ancestors) => {
+    cursorAncestors = ancestors;
+    return EXIT; // Stop visiting after finding the target node
+  }, true);
+
+  if (cursorAncestors.length === 0) {
+    // we are at the root node, return entire document
+    return markdownContent;
+  }
+
+  if (cursorAncestors.length === 1) {
+    // we are at a top level node, return content based on start/stop of node
+    return contentFromNode(nodeAtCursor, markdownContent);
+  }
+
+  return contentFromNode(cursorAncestors[1], markdownContent);
+}
+
+
+
+// Function to find top-level ancestor of a node
+export function findTopLevelAncestor(tree: Root, targetNode: Node | undefined): Node | null {
+  let topLevelNode: Node | null = null;
+
+  if (!targetNode) {
+    return null; // No target node provided
+  }
+
+  // only visit the target node
+  const test = (node: Node) => node === targetNode;
+
+  visitParents(tree, test, (node, ancestors) => {
+    if (ancestors.length === 1) {
+      // the targetNode is top-level itself
+      topLevelNode = node;
+    } else if (ancestors.length > 1) {
+      topLevelNode = ancestors[1];
+    }
+    return EXIT; // Stop visiting after finding the target node
+  }, true);
+  return topLevelNode;
+}
