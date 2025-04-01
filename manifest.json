@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-cannonball",
 	"name": "Cannonball",
-	"version": "0.1.0",
+	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "AI-powered productivity system for Obsidian",
 	"author": "Thomas Rueckstiess",

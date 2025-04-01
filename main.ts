@@ -3,6 +3,10 @@ import { LLMSuggest } from "./suggest/llm-suggest";
 import { LLMSettings, LLMSettingsTab, DEFAULT_SETTINGS } from "./settings";
 import { sendToLLM } from "./llm-service";
 import { LLMPromptModal } from "./modals/llm-prompt-modal";
+import { parseMarkdownToAST, astToMarkdown } from "./markdown";
+import { CustomTask } from "remark-custom-tasks";
+import { inspect } from "unist-util-inspect";
+import { visit } from 'unist-util-visit'
 
 export default class LLMHelper extends Plugin {
 	public settings: LLMSettings;
@@ -30,6 +34,36 @@ export default class LLMHelper extends Plugin {
 			}
 		});
 
+		// Add a command to parse the current document to AST
+		this.addCommand({
+			id: "parse-markdown-ast",
+			name: "Parse current document to AST",
+			editorCallback: async (editor) => {
+				try {
+					// Get current editor content
+					const content = editor.getValue();
+
+					// Step 1: Parse to AST
+					const ast = await parseMarkdownToAST(content);
+
+					visit(ast, 'customTask', (node: CustomTask) => {
+						console.log('custom task node', node.marker)
+					});
+
+					// Step 2: Log the AST to console
+					console.log('Markdown AST:');
+					console.log(inspect(ast));
+
+					// Step 3: Stringify the AST back to markdown
+					const newContent = await astToMarkdown(ast);
+
+					// Step 4: Update the editor with the stringified content
+					editor.setValue(newContent);
+				} catch (error) {
+					console.error("Error processing markdown:", error);
+				}
+			}
+		});
 		console.log("LLM Helper plugin loaded");
 	}
 
